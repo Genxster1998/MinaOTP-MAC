@@ -1,11 +1,10 @@
 name: Xcode - Build and Analyze
 
 on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
-
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Version name (default is ref name)'
 jobs:
   build:
     name: Build and analyse default scheme using xcodebuild command
@@ -14,7 +13,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set Default Scheme
+      - name: Install Certificates
+        run: |
+          # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
+          MAC_DEV_CER_PATH=$RUNNER_TEMP/madev.p12
+          DEVELOPER_ID_CER_PATH=$RUNNER_TEMP/devid.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+          PP_PATH=$RUNNER_TEMP/build_pp.provisionprofile
+          echo -n "$MAC_DEV_CER" | base64 --decode -o $MAC_DEV_CER_PATH
+          echo -n "$DEVELOPER_ID_CER" | base64 --decode -o $DEVELOPER_ID_CER_PATH
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security import $MAC_DEV_CER_PATH -P "$MAC_DEV_CER_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security import $DEVELOPER_ID_CER_PATH -P "$DEVELOPER_ID_CER_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+        env:
+          DEVELOPER_ID_CER: ${{ secrets.DEVELOPER_ID_CER }}
+          DEVELOPER_ID_CER_PASSWORD: ${{ secrets.DEVELOPER_ID_CER_PASSWORD }}
+          MAC_DEV_CER: ${{ secrets.MAC_DEV_CER }}
+          MAC_DEV_CER_PASSWORD: ${{ secrets.MAC_DEV_CER_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      - name: Build App
         run: |
           mkdir -p dist
           xcodebuild \
@@ -31,8 +55,8 @@ jobs:
             -allowProvisioningUpdates
           npx create-dmg dist/MinaOTP-MAC.app dist/
           mv dist/MinaOTP-MAC*.dmg dist/MinaOTP-MAC.dmg
-      - name: Upload Franz.dmg
-        uses: actions/upload-artifact@v3
+      - name: Upload MinaOTP-MAC.dmg
+        uses: actions/upload-artifact@v4
         with:
           name: MinaOTP-MAC.dmg
           path: dist/MinaOTP-MAC.dmg
