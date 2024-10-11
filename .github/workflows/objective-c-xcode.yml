@@ -15,7 +15,6 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Certificates
         run: |
-          # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
           MAC_DEV_CER_PATH=$RUNNER_TEMP/madev.p12
           DEVELOPER_ID_CER_PATH=$RUNNER_TEMP/devid.p12
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
