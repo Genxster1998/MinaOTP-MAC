@@ -19,7 +19,6 @@ jobs:
           MAC_DEV_CER_PATH=$RUNNER_TEMP/madev.p12
           DEVELOPER_ID_CER_PATH=$RUNNER_TEMP/devid.p12
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
           PP_PATH=$RUNNER_TEMP/build_pp.provisionprofile
           echo -n "$MAC_DEV_CER" | base64 --decode -o $MAC_DEV_CER_PATH
           echo -n "$DEVELOPER_ID_CER" | base64 --decode -o $DEVELOPER_ID_CER_PATH
@@ -38,6 +37,7 @@ jobs:
           MAC_DEV_CER: ${{ secrets.MAC_DEV_CER }}
           MAC_DEV_CER_PASSWORD: ${{ secrets.MAC_DEV_CER_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
       - name: Build App
         run: |
           mkdir -p dist
